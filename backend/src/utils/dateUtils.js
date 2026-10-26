@@ -1,0 +1,115 @@
+/**
+ * MedWise Clinical Decision Support Portal - Date Utilities
+ * Standardized calendar date handling and timezone-aware comparisons.
+ */
+
+const APP_TIMEZONE = 'Asia/Kolkata';
+
+/**
+ * Extract YYYY-MM-DD calendar date string in application timezone (Asia/Kolkata).
+ * Avoids UTC shifts (e.g. 18:30 UTC turning into previous date).
+ * @param {string|Date|number} dateInput
+ * @returns {string} YYYY-MM-DD
+ */
+const toCalendarDateString = (dateInput) => {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+    return dateInput.trim();
+  }
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: APP_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+  } catch {
+    const d = new Date(dateInput);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+};
+
+/**
+ * Compare two dates by their calendar dates (YYYY-MM-DD).
+ * @returns {number} -1 if dateA < dateB, 0 if equal, 1 if dateA > dateB
+ */
+const compareCalendarDates = (dateA, dateB = new Date()) => {
+  const strA = toCalendarDateString(dateA);
+  const strB = toCalendarDateString(dateB);
+  if (!strA || !strB) return 0;
+  if (strA < strB) return -1;
+  if (strA > strB) return 1;
+  return 0;
+};
+
+/**
+ * Checks if a follow-up appointment date is strictly in the future compared to reference date (today).
+ * @param {string|Date} dateInput
+ * @param {string|Date} referenceDate Default is current time
+ * @returns {boolean}
+ */
+const isFollowUpDateInFuture = (dateInput, referenceDate = new Date()) => {
+  const targetStr = toCalendarDateString(dateInput);
+  const refStr = toCalendarDateString(referenceDate);
+  return Boolean(targetStr && refStr && targetStr > refStr);
+};
+
+/**
+ * Checks if a follow-up appointment date is today's calendar date.
+ * @param {string|Date} dateInput
+ * @param {string|Date} referenceDate Default is current time
+ * @returns {boolean}
+ */
+const isFollowUpDateToday = (dateInput, referenceDate = new Date()) => {
+  const targetStr = toCalendarDateString(dateInput);
+  const refStr = toCalendarDateString(referenceDate);
+  return Boolean(targetStr && refStr && targetStr === refStr);
+};
+
+/**
+ * Checks if a follow-up appointment date has passed (overdue).
+ * @param {string|Date} dateInput
+ * @param {string|Date} referenceDate Default is current time
+ * @returns {boolean}
+ */
+const isFollowUpDateOverdue = (dateInput, referenceDate = new Date()) => {
+  const targetStr = toCalendarDateString(dateInput);
+  const refStr = toCalendarDateString(referenceDate);
+  return Boolean(targetStr && refStr && targetStr < refStr);
+};
+
+/**
+ * Format ISO date string into readable date (e.g. "October 16, 2026")
+ * @param {string|Date} dateStr
+ * @returns {string}
+ */
+const formatDisplayDate = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString('en-US', {
+      timeZone: APP_TIMEZONE,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return String(dateStr);
+  }
+};
+
+module.exports = {
+  APP_TIMEZONE,
+  toCalendarDateString,
+  compareCalendarDates,
+  isFollowUpDateInFuture,
+  isFollowUpDateToday,
+  isFollowUpDateOverdue,
+  formatDisplayDate,
+};
